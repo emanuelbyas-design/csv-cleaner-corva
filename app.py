@@ -16,47 +16,98 @@ CLEANER_MAP: dict[str, type[BaseCleaner]] = {
 
 
 class App(ctk.CTk):
+    BG_PRIMARY = "#0d1117"
+    BG_SECONDARY = "#161b22"
+    BG_TERTIARY = "#21262d"
+    ACCENT_CYAN = "#00bcd4"
+    ACCENT_CYAN_HOVER = "#00acc1"
+    ACCENT_GREEN = "#4caf50"
+    TEXT_PRIMARY = "#e0e0e0"
+    TEXT_SECONDARY = "#999999"
+    TEXT_MUTED = "#666666"
+    BORDER_ACCENT = "#1a3a40"
+
     def __init__(self):
         super().__init__()
 
         self.title("CSV Cleaner for Corva")
-        self.geometry("640x480")
-        self.minsize(560, 420)
+        self.geometry("660x520")
+        self.minsize(580, 460)
 
         ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme("blue")
+
+        self.configure(fg_color=self.BG_PRIMARY)
 
         self._filepath: str = ""
         self._detected_provider: str = ""
 
         self.grid_columnconfigure(0, weight=1)
 
-        # --- File selection row ---
-        file_frame = ctk.CTkFrame(self, fg_color="transparent")
-        file_frame.grid(row=0, column=0, padx=20, pady=(20, 8), sticky="ew")
+        # --- Header with app name ---
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.grid(row=0, column=0, padx=24, pady=(20, 4), sticky="ew")
+
+        logo_label = ctk.CTkLabel(
+            header_frame, text="CSV Cleaner",
+            font=ctk.CTkFont(family="Roboto", size=22, weight="bold"),
+            text_color=self.TEXT_PRIMARY,
+        )
+        logo_label.pack(side="left")
+
+        accent_label = ctk.CTkLabel(
+            header_frame, text="  for Corva",
+            font=ctk.CTkFont(family="Roboto", size=22, weight="bold"),
+            text_color=self.ACCENT_CYAN,
+        )
+        accent_label.pack(side="left")
+
+        subtitle = ctk.CTkLabel(
+            self, text="Clean and format EDR CSV files for Corva stream ingestion.",
+            font=ctk.CTkFont(family="Roboto", size=12),
+            text_color=self.TEXT_SECONDARY, anchor="w",
+        )
+        subtitle.grid(row=1, column=0, padx=24, pady=(0, 12), sticky="ew")
+
+        # --- Card panel ---
+        card = ctk.CTkFrame(
+            self, fg_color=self.BG_SECONDARY,
+            border_color=self.BORDER_ACCENT, border_width=1,
+            corner_radius=8,
+        )
+        card.grid(row=2, column=0, padx=24, pady=(0, 12), sticky="ew")
+        card.grid_columnconfigure(0, weight=1)
+
+        # --- File selection row (inside card) ---
+        file_frame = ctk.CTkFrame(card, fg_color="transparent")
+        file_frame.grid(row=0, column=0, padx=16, pady=(16, 8), sticky="ew")
         file_frame.grid_columnconfigure(1, weight=1)
 
         self.browse_btn = ctk.CTkButton(
             file_frame, text="Browse File...", width=130, height=36,
+            font=ctk.CTkFont(family="Roboto", size=13, weight="bold"),
+            fg_color=self.BG_TERTIARY, hover_color="#2d333b",
+            text_color=self.TEXT_PRIMARY, border_color=self.BORDER_ACCENT,
+            border_width=1, corner_radius=6,
             command=self._browse_file,
         )
         self.browse_btn.grid(row=0, column=0, padx=(0, 10))
 
         self.file_label = ctk.CTkLabel(
             file_frame, text="No file selected",
-            font=ctk.CTkFont(size=13), text_color=("gray50", "gray55"),
-            anchor="w",
+            font=ctk.CTkFont(family="Roboto", size=13),
+            text_color=self.TEXT_MUTED, anchor="w",
         )
         self.file_label.grid(row=0, column=1, sticky="ew")
 
-        # --- Provider selector row ---
-        provider_frame = ctk.CTkFrame(self, fg_color="transparent")
-        provider_frame.grid(row=1, column=0, padx=20, pady=8, sticky="ew")
+        # --- Provider selector row (inside card) ---
+        provider_frame = ctk.CTkFrame(card, fg_color="transparent")
+        provider_frame.grid(row=1, column=0, padx=16, pady=(4, 16), sticky="ew")
         provider_frame.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(
             provider_frame, text="Provider:",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(family="Roboto", size=13, weight="bold"),
+            text_color=self.TEXT_SECONDARY,
         ).grid(row=0, column=0, padx=(0, 10))
 
         self.provider_var = ctk.StringVar(value="Auto-detect")
@@ -65,52 +116,61 @@ class App(ctk.CTk):
             values=["Auto-detect"] + list(PROVIDERS),
             variable=self.provider_var,
             width=180, height=36,
+            font=ctk.CTkFont(family="Roboto", size=13),
+            fg_color=self.BG_TERTIARY, button_color=self.BG_TERTIARY,
+            button_hover_color="#2d333b",
+            dropdown_fg_color=self.BG_SECONDARY,
+            dropdown_hover_color=self.BG_TERTIARY,
+            text_color=self.TEXT_PRIMARY,
             state="disabled",
         )
         self.provider_menu.grid(row=0, column=1, sticky="w")
 
         self.provider_info = ctk.CTkLabel(
             provider_frame, text="",
-            font=ctk.CTkFont(size=12), text_color=("gray50", "gray55"),
+            font=ctk.CTkFont(family="Roboto", size=11),
+            text_color=self.TEXT_MUTED,
         )
         self.provider_info.grid(row=0, column=2, padx=(12, 0))
 
         # --- File info ---
         self.info_label = ctk.CTkLabel(
-            self, text="", font=ctk.CTkFont(size=13),
-            anchor="w",
+            self, text="",
+            font=ctk.CTkFont(family="Roboto", size=13),
+            text_color=self.TEXT_SECONDARY, anchor="w",
         )
-        self.info_label.grid(row=2, column=0, padx=20, pady=8, sticky="ew")
+        self.info_label.grid(row=3, column=0, padx=24, pady=(0, 4), sticky="ew")
 
         # --- Progress bar ---
-        self.progress = ctk.CTkProgressBar(self, width=400, height=16)
-        self.progress.grid(row=3, column=0, padx=20, pady=8, sticky="ew")
+        self.progress = ctk.CTkProgressBar(
+            self, width=400, height=14,
+            fg_color=self.BG_TERTIARY,
+            progress_color=self.ACCENT_CYAN,
+            corner_radius=4,
+        )
+        self.progress.grid(row=4, column=0, padx=24, pady=6, sticky="ew")
         self.progress.set(0)
 
         # --- Clean button ---
         self.clean_btn = ctk.CTkButton(
-            self, text="Clean & Export", height=44, state="disabled",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            self, text="Clean & Export", height=46, state="disabled",
+            font=ctk.CTkFont(family="Roboto", size=16, weight="bold"),
+            fg_color=self.ACCENT_CYAN, hover_color=self.ACCENT_CYAN_HOVER,
+            text_color=self.BG_PRIMARY, corner_radius=8,
             command=self._start_clean,
         )
-        self.clean_btn.grid(row=4, column=0, padx=20, pady=(12, 8), sticky="ew")
+        self.clean_btn.grid(row=5, column=0, padx=24, pady=(8, 8), sticky="ew")
 
         # --- Status output ---
-        self.status_text = ctk.CTkTextbox(self, height=140, state="disabled")
-        self.status_text.grid(row=5, column=0, padx=20, pady=(8, 12), sticky="nsew")
-        self.grid_rowconfigure(5, weight=1)
-
-        # --- Theme toggle at bottom ---
-        bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
-        bottom_frame.grid(row=6, column=0, padx=20, pady=(0, 12), sticky="ew")
-
-        self.theme_btn = ctk.CTkButton(
-            bottom_frame, text="Toggle Theme", width=120, height=30,
-            fg_color="transparent", hover_color=("gray85", "gray30"),
-            text_color=("gray40", "gray60"), font=ctk.CTkFont(size=12),
-            command=self._toggle_theme,
+        self.status_text = ctk.CTkTextbox(
+            self, height=140, state="disabled",
+            font=ctk.CTkFont(family="Roboto", size=12),
+            fg_color=self.BG_SECONDARY, text_color=self.TEXT_PRIMARY,
+            border_color=self.BORDER_ACCENT, border_width=1,
+            corner_radius=8,
         )
-        self.theme_btn.pack(side="right")
+        self.status_text.grid(row=6, column=0, padx=24, pady=(4, 16), sticky="nsew")
+        self.grid_rowconfigure(6, weight=1)
 
     # ------ File browsing ------
 
@@ -124,7 +184,7 @@ class App(ctk.CTk):
 
         self._filepath = path
         display = path if len(path) < 60 else "..." + path[-57:]
-        self.file_label.configure(text=display, text_color=("gray10", "gray90"))
+        self.file_label.configure(text=display, text_color=self.ACCENT_GREEN)
 
         self._detect_and_preview()
 
@@ -206,7 +266,13 @@ class App(ctk.CTk):
             f"Done! Cleaned {result.kept_rows:,} rows "
             f"({result.removed_rows:,} removed from {result.total_rows:,} total)."
         )
-        self._log_status(f"Saved to: {result.output_path}")
+        if len(result.output_paths) > 1:
+            self._log_status(
+                f"Output split into {len(result.output_paths)} files "
+                f"(>{1_048_000:,} rows):"
+            )
+        for path in result.output_paths:
+            self._log_status(f"Saved to: {path}")
 
     # ------ Helpers ------
 
@@ -215,7 +281,3 @@ class App(ctk.CTk):
         self.status_text.insert("end", msg + "\n")
         self.status_text.see("end")
         self.status_text.configure(state="disabled")
-
-    def _toggle_theme(self):
-        current = ctk.get_appearance_mode()
-        ctk.set_appearance_mode("Light" if current == "Dark" else "Dark")

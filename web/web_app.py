@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import shutil
+import zipfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -75,13 +76,25 @@ def clean():
         result = cleaner.clean()
 
         base, ext = os.path.splitext(file.filename)
-        download_name = f"{base}_Corva_Formatted{ext}"
+
+        if len(result.output_paths) == 1:
+            return send_file(
+                result.output_paths[0],
+                as_attachment=True,
+                download_name=f"{base}_Corva_Formatted{ext}",
+                mimetype="text/csv",
+            )
+
+        zip_path = os.path.join(tmp_dir, f"{base}_Corva_Formatted.zip")
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for p in result.output_paths:
+                zf.write(p, os.path.basename(p))
 
         return send_file(
-            result.output_path,
+            zip_path,
             as_attachment=True,
-            download_name=download_name,
-            mimetype="text/csv",
+            download_name=f"{base}_Corva_Formatted.zip",
+            mimetype="application/zip",
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500

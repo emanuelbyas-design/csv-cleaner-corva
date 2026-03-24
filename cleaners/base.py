@@ -1,15 +1,17 @@
 import csv
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Optional
+
+MAX_ROWS = 1_048_000
 
 
 @dataclass
 class CleanResult:
-    output_path: str
-    total_rows: int
-    kept_rows: int
-    removed_rows: int
+    output_paths: list[str] = field(default_factory=list)
+    total_rows: int = 0
+    kept_rows: int = 0
+    removed_rows: int = 0
 
 
 class BaseCleaner:
@@ -29,9 +31,10 @@ class BaseCleaner:
         if self._progress_cb:
             self._progress_cb(min(fraction, 1.0))
 
-    def _output_path(self) -> str:
+    def _output_path(self, part: int | None = None) -> str:
         base, ext = os.path.splitext(self.filepath)
-        return f"{base}_Corva_Formatted{ext}"
+        suffix = f"_part{part}" if part is not None else ""
+        return f"{base}_Corva_Formatted{suffix}{ext}"
 
     def read_csv(self) -> tuple[list[str], list[list[str]]]:
         """Read CSV preserving original header and all rows as string lists."""
@@ -93,12 +96,26 @@ class BaseCleaner:
         kept_rows = len(cleaned_rows)
         self._report_progress(0.8)
 
-        output_path = self._output_path()
-        self.write_csv(header, cleaned_rows, output_path)
+        output_paths: list[str] = []
+        if kept_rows <= MAX_ROWS:
+            path = self._output_path()
+            self.write_csv(header, cleaned_rows, path)
+            output_paths.append(path)
+        else:
+            part = 1
+            for start in range(0, kept_rows, MAX_ROWS):
+                chunk = cleaned_rows[start : start + MAX_ROWS]
+                path = self._output_path(part=part)
+                self.write_csv(header, chunk, path)
+                output_paths.append(path)
+                part += 1
+                frac = 0.8 + 0.2 * (start + len(chunk)) / kept_rows
+                self._report_progress(frac)
+
         self._report_progress(1.0)
 
         return CleanResult(
-            output_path=output_path,
+            output_paths=output_paths,
             total_rows=total_rows,
             kept_rows=kept_rows,
             removed_rows=total_rows - kept_rows,
