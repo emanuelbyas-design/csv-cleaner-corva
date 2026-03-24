@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Cleaner for Corva</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #f8fafc;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 28px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #334155;
+            border-radius: 12px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.06);
+        }
+
+        .drop-zone.has-file {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.06);
+        }
+
+        .drop-icon {
+            font-size: 2.4rem;
+            margin-bottom: 12px;
+        }
+
+        .drop-text {
+            font-size: 0.95rem;
+            color: #94a3b8;
+        }
+
+        .drop-text strong {
+            color: #3b82f6;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #22c55e;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .provider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .provider-row label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .provider-row select {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .detected-badge {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .status.success {
+            display: block;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #166534;
+            color: #4ade80;
+        }
+
+        .status.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #991b1b;
+            color: #f87171;
+        }
+
+        .status.loading {
+            display: block;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #1e40af;
+            color: #93c5fd;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #93c5fd;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV Cleaner for Corva</h1>
+        <p class="subtitle">Upload a raw EDR CSV file to clean and format for Corva stream ingestion.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">&#128196;</div>
+            <div class="drop-text">Drag & drop a CSV file here, or <strong>click to browse</strong></div>
+            <div class="file-name" id="fileName"></div>
+        </div>
+
+        <input type="file" id="fileInput" accept=".csv" hidden>
+
+        <div class="provider-row">
+            <label>Provider:</label>
+            <select id="providerSelect" disabled>
+                <option value="Auto-detect">Auto-detect</option>
+                <option value="NOV">NOV</option>
+                <option value="Rigcloud">Rigcloud</option>
+                <option value="Pason">Pason</option>
+            </select>
+            <span class="detected-badge" id="detectedBadge"></span>
+        </div>
+
+        <button class="btn btn-primary" id="cleanBtn" disabled>Clean & Download</button>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
+        const fileName = document.getElementById("fileName");
+        const providerSelect = document.getElementById("providerSelect");
+        const detectedBadge = document.getElementById("detectedBadge");
+        const cleanBtn = document.getElementById("cleanBtn");
+        const status = document.getElementById("status");
+
+        let selectedFile = null;
+
+        // Drag and drop
+        dropZone.addEventListener("click", () => fileInput.click());
+
+        dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("dragover");
+        });
+
+        dropZone.addEventListener("dragleave", () => {
+            dropZone.classList.remove("dragover");
+        });
+
+        dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("dragover");
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith(".csv")) {
+                showStatus("Please select a .csv file.", "error");
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            dropZone.classList.add("has-file");
+            cleanBtn.disabled = false;
+            status.style.display = "none";
+
+            // Auto-detect provider
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch("/detect", { method: "POST", body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.provider && data.provider !== "Unknown") {
+                        providerSelect.value = data.provider;
+                        providerSelect.disabled = false;
+                        detectedBadge.textContent = `(auto-detected: ${data.provider})`;
+                    } else {
+                        providerSelect.value = "Auto-detect";
+                        providerSelect.disabled = false;
+                        detectedBadge.textContent = "(could not auto-detect)";
+                    }
+                })
+                .catch(() => {
+                    providerSelect.disabled = false;
+                    detectedBadge.textContent = "";
+                });
+        }
+
+        // Clean and download
+        cleanBtn.addEventListener("click", async () => {
+            if (!selectedFile) return;
+
+            cleanBtn.disabled = true;
+            showStatus('<span class="spinner"></span> Cleaning...', "loading");
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+            formData.append("provider", providerSelect.value);
+
+            try {
+                const response = await fetch("/clean", { method: "POST", body: formData });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    showStatus(err.error || "Something went wrong.", "error");
+                    cleanBtn.disabled = false;
+                    return;
+                }
+
+                const blob = await response.blob();
+                const base = selectedFile.name.replace(/\.csv$/i, "");
+                const downloadName = `${base}_Corva_Formatted.csv`;
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = downloadName;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                showStatus(`Done! File downloaded as <strong>${downloadName}</strong>`, "success");
+            } catch (e) {
+                showStatus("Network error. Is the server running?", "error");
+            }
+
+            cleanBtn.disabled = false;
+        });
+
+        function showStatus(msg, type) {
+            status.innerHTML = msg;
+            status.className = "status " + type;
+        }
+    </script>
+</body>
+</html>
