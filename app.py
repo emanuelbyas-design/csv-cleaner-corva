@@ -30,7 +30,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("CSV Cleaner for Corva")
+        self.title("Corva Automatic CSV Formatter")
         self.geometry("660x520")
         self.minsize(580, 460)
 
@@ -48,14 +48,14 @@ class App(ctk.CTk):
         header_frame.grid(row=0, column=0, padx=24, pady=(20, 4), sticky="ew")
 
         logo_label = ctk.CTkLabel(
-            header_frame, text="CSV Cleaner",
+            header_frame, text="Corva",
             font=ctk.CTkFont(family="Roboto", size=22, weight="bold"),
             text_color=self.TEXT_PRIMARY,
         )
         logo_label.pack(side="left")
 
         accent_label = ctk.CTkLabel(
-            header_frame, text="  for Corva",
+            header_frame, text="  Automatic CSV Formatter",
             font=ctk.CTkFont(family="Roboto", size=22, weight="bold"),
             text_color=self.ACCENT_CYAN,
         )

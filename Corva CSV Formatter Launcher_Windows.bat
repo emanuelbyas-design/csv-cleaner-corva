@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 echo ============================================
-echo    CSV Cleaner for Corva - Windows Launcher
+echo    Corva Automatic CSV Formatter - Windows
 echo ============================================
 echo.
 
@@ -18,6 +18,6 @@ if %errorlevel% neq 0 (
 echo Installing required packages...
 pip install -r requirements.txt --quiet
 echo.
-echo Launching CSV Cleaner...
+echo Launching Corva Automatic CSV Formatter...
 echo.
 python main.py

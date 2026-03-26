@@ -1,4 +1,4 @@
-# CSV Cleaner for Corva
+# Corva Automatic CSV Formatter
 
 Cleans and reformats raw EDR CSV files for Corva stream ingestion. Supports NOV, Rigcloud, and Pason providers.
 
@@ -103,4 +103,4 @@ Then open [http://localhost:5000](http://localhost:5000) in your browser.
 4. Connect your GitHub repo
 5. Render auto-detects the config from `render.yaml`
 6. Click "Create Web Service"
-7. Your app will be live at `https://csv-cleaner-corva.onrender.com`
+7. Your app will be live at your Render URL (e.g. `https://csv-cleaner-corva.onrender.com`)

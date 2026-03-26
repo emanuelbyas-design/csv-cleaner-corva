@@ -2,7 +2,7 @@
 cd "$(dirname "$0")"
 
 echo "============================================"
-echo "   CSV Cleaner for Corva - Mac Launcher"
+echo "   Corva Automatic CSV Formatter - Mac"
 echo "============================================"
 echo ""
 
@@ -17,6 +17,6 @@ fi
 echo "Installing required packages..."
 pip3 install -r requirements.txt --quiet
 echo ""
-echo "Launching CSV Cleaner..."
+echo "Launching Corva Automatic CSV Formatter..."
 echo ""
 python3 main.py
